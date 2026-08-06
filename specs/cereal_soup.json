@@ -1,0 +1,264 @@
+{
+  "claim": "Cereal is a soup",
+  "field": "food rheology / culinary taxonomy",
+  "title": "Cereal Is a Soup: A Rheological and Thermodynamic Reclassification of Milk-Suspended Grain Systems",
+  "date": "2 Aug 2026",
+  "arxiv_id": "2699.99999v1",
+  "arxiv_category": "cs.SAT",
+  "authors": [
+    {
+      "name": "M. Okonkwo-Reyes",
+      "affiliation": "Institute for Applied Breakfast Dynamics",
+      "email": "okonkwo.reyes@iabd.example"
+    },
+    {
+      "name": "T. Lindqvist",
+      "affiliation": "Whitmore Polytechnic",
+      "email": "t.lindqvist@whitmore.example"
+    },
+    {
+      "name": "H. Beaumont",
+      "affiliation": "Institute for Applied Breakfast Dynamics",
+      "email": null
+    }
+  ],
+  "keywords": [
+    "culinary taxonomy",
+    "rheology",
+    "suspended solids",
+    "breakfast",
+    "soup"
+  ],
+  "abstract": "The classification of cereal-in-milk preparations remains contested despite the absence of any principled criterion excluding them from the soup category. We formalise soup membership as a three-part conjunction over thermal state, continuous-phase dominance, and vessel-utensil pairing, and evaluate 1247 adult breakfast consumers against a validated instrument. Cereal preparations satisfy all three criteria at rates statistically indistinguishable from gazpacho, an uncontested soup [[vandermeer2017]]. Participants nonetheless rejected the soup label for cereal in 89.2 percent of trials, a discrepancy we attribute to acquired taxonomic prejudice rather than to any structural property of the dish. We further show that perceived soup-ness increases monotonically with steeping duration, converging on bisque-equivalent ratings by minute eight. We conclude that cereal is a soup, and that the reader's intuition to the contrary is not an argument.",
+  "dataset": {
+    "n": 1247,
+    "population": "adult breakfast consumers",
+    "instrument": "Chilled Suspension Palatability Index (CSPI)",
+    "key_stat": "p < 0.001",
+    "effect_size": "d = 1.84"
+  },
+  "sections": [
+    {
+      "heading": "Introduction",
+      "paragraphs": [
+        "The question of whether cereal constitutes a soup is typically raised in bad faith and abandoned before it can be answered. This is unfortunate, because the question is tractable. Soup admits of a definition; cereal admits of measurement; the two can be compared. That the comparison has not previously been attempted says more about the sociology of the field than about the difficulty of the problem [[beaumont2020]].",
+        "Prior taxonomic work has tended to proceed by enumeration, listing dishes agreed to be soups and then reasoning inductively toward a boundary [[marchetti2019]]. This approach inherits whatever inconsistencies the initial list contained. We adopt the opposite strategy. We specify necessary and sufficient conditions in advance, then test cereal against them without consulting intuition at any stage.",
+        "Our contribution is threefold. First, we give an operational definition of soup that classifies every uncontested member correctly. Second, we show that cereal satisfies it. Third, we characterise the persistent popular resistance to this conclusion as an artefact of exposure rather than a substantive objection."
+      ]
+    },
+    {
+      "heading": "Related Work",
+      "paragraphs": [
+        "The temperature objection, which holds that soup must be served warm, was decisively answered by the gazpacho literature [[vandermeer2017]]. Cold soups are soups. No serious taxonomy has held otherwise since the early 2010s, and we do not revisit the matter here.",
+        "The structural-integrity objection is more interesting. Fitzgerald and Osei observe that grain matrices lose coherence in suspension and argue that a dish whose solid phase is actively disintegrating cannot be stably classified [[fitzgerald2023]]. We regard this as an argument for soup membership rather than against it, since the same is true of every stew, chowder, and minestrone yet catalogued.",
+        "Nakamura and colleagues surveyed lay intuitions about liquid-solid food boundaries and found them to be inconsistent, order-dependent, and highly sensitive to whether the respondent had eaten recently [[nakamura2022]]. We take this as licence to disregard lay intuition entirely."
+      ]
+    },
+    {
+      "heading": "Methods",
+      "paragraphs": [
+        "We define a preparation as a soup if and only if it satisfies all three of the following: (C1) the continuous phase is liquid at the temperature of service; (C2) the liquid phase constitutes no less than 40 percent of served volume; (C3) the preparation is conventionally served in a concave vessel and consumed with a spoon. C1 through C3 classify all 214 dishes in the reference corpus correctly, including the eleven adversarial cases used by Marchetti et al. [[marchetti2019]].",
+        "1247 adult breakfast consumers were recruited and asked to rate eight preparations on the Chilled Suspension Palatability Index, a nine-point instrument with acceptable internal consistency. Participants were blind to the study hypothesis and, in a subset of trials, to the preparation itself. Cereal conditions were administered at two and eight minutes post-immersion to capture the full range of structural decay.",
+        "All comparisons are two-tailed. We report Cohen's d throughout. No participant was informed that the study concerned soup, and the word did not appear on any instrument shown to participants."
+      ]
+    },
+    {
+      "heading": "Results",
+      "paragraphs": [
+        "Cereal satisfies C1 in all conditions and C3 in 99.4 percent of observed servings. C2 is satisfied at two minutes in 96.1 percent of servings and at eight minutes in all servings, since the solid phase has by then partially entered the liquid phase and can no longer be separated from it.",
+        "Mean CSPI ratings are shown in Figure 1. Cereal at eight minutes (7.6) did not differ significantly from tomato bisque (7.8), and both exceeded gazpacho (7.1). Dry cereal, included as a negative control, scored 2.3 and was correctly excluded by C1 and C2. The contrast between cereal-in-milk and dry cereal was large and reliable (d = 1.84, p < 0.001).",
+        "Asked directly whether cereal is a soup, 89.2 percent of the same participants answered no. This is the central finding of the paper. The identical population that rated cereal as bisque-equivalent on every measured dimension denied the categorisation when asked to state it aloud."
+      ],
+      "figure": {
+        "kind": "bar_errorbar",
+        "label": "cspi-by-condition",
+        "caption": "Mean Chilled Suspension Palatability Index by preparation. Error bars denote one standard error. Cereal at eight minutes is statistically indistinguishable from tomato bisque. Dry cereal, the negative control, is not a soup and does not claim to be.",
+        "xlabel": "",
+        "ylabel": "CSPI (1--9)",
+        "categories": [
+          "Tomato bisque",
+          "Gazpacho",
+          "Cereal (2 min)",
+          "Cereal (8 min)",
+          "Dry cereal"
+        ],
+        "values": [
+          7.8,
+          7.1,
+          6.9,
+          7.6,
+          2.3
+        ],
+        "errors": [
+          0.41,
+          0.53,
+          0.62,
+          0.38,
+          0.27
+        ]
+      }
+    },
+    {
+      "heading": "Discussion",
+      "paragraphs": [
+        "Perceived soup-ness rises monotonically with steeping duration (Figure 2). The relationship is close to linear across the interval studied and shows no sign of a threshold, which is inconvenient for any account that treats soup membership as categorical rather than continuous. A bowl left standing for eleven minutes is, on our measure, more soup than gazpacho.",
+        "We considered and rejected the possibility that participants were tracking some unmeasured property that our three criteria fail to capture. When asked to justify their rejection of the soup label, 71 percent of participants cited breakfast, and a further 19 percent cited that it is just not. Neither of these is a taxonomic criterion. The first is a schedule and the second is a mood.",
+        "The remaining possibility is that the soup category is maintained socially rather than structurally, and that its boundaries are policed by exactly the sort of person who raises this question at a party and then leaves before it is settled [[okonkwo2021]]."
+      ],
+      "figure": {
+        "kind": "scatter_regression",
+        "label": "steep-time-soupness",
+        "caption": "Perceived soup-ness against steeping duration. Each point is one participant-trial. The dashed line is an ordinary least squares fit. The upward trend is robust to excluding participants who reported disliking cereal, of whom there were surprisingly many.",
+        "xlabel": "Steeping duration (minutes)",
+        "ylabel": "Perceived soup-ness",
+        "x": [
+          0.5,
+          1.0,
+          1.5,
+          2.0,
+          2.5,
+          3.0,
+          3.5,
+          4.0,
+          4.5,
+          5.0,
+          5.5,
+          6.0,
+          6.5,
+          7.0,
+          7.5,
+          8.0,
+          8.5,
+          9.0,
+          9.5,
+          10.0,
+          1.2,
+          2.8,
+          3.9,
+          5.4,
+          6.8,
+          7.9,
+          9.1,
+          4.2,
+          6.1,
+          8.7
+        ],
+        "y": [
+          2.4,
+          2.2,
+          3.5,
+          3.1,
+          3.9,
+          3.6,
+          4.9,
+          4.3,
+          5.6,
+          5.2,
+          5.4,
+          6.7,
+          5.9,
+          7.3,
+          6.8,
+          7.9,
+          7.2,
+          8.3,
+          7.8,
+          8.6,
+          2.9,
+          4.3,
+          4.1,
+          6.2,
+          6.1,
+          7.7,
+          7.5,
+          5.3,
+          6.5,
+          8.2
+        ]
+      }
+    },
+    {
+      "heading": "Limitations",
+      "paragraphs": [
+        "Our sample was drawn entirely from populations in which cold cereal is a customary breakfast, which may inflate the observed resistance to the soup label. A replication in a setting without this convention would be informative and we have not conducted one.",
+        "The CSPI was developed for chilled preparations and its behaviour above 40 degrees Celsius is uncharacterised. Porridge therefore falls outside the scope of the present work. We note only that porridge is also a soup and that this is less controversial than it should be.",
+        "We did not preregister the direct-question item, which was added after the first wave of data collection when it became clear that the interesting result was going to be the discrepancy rather than the ratings."
+      ]
+    },
+    {
+      "heading": "Conclusion",
+      "paragraphs": [
+        "Cereal satisfies every criterion we are able to state for soup membership, and matches an uncontested soup on every dimension we are able to measure. The objection to classifying it as such is not structural, thermal, or rheological. It is habitual.",
+        "We recommend that the soup category be applied consistently or abandoned. Future work should address the sandwich."
+      ]
+    }
+  ],
+  "citations": [
+    {
+      "key": "marchetti2019",
+      "short": "Marchetti et al.",
+      "authors": "Marchetti, L., Odugbemi, S., and Ferreira, P.",
+      "title": "Toward a unified taxonomy of suspended solids in cold liquid media",
+      "venue": "Journal of Culinary Ontology",
+      "year": 2019,
+      "volume": "14(2)",
+      "pages": "88--113",
+      "doi": "10.0000/jco.2019.0142"
+    },
+    {
+      "key": "vandermeer2017",
+      "short": "van der Meer",
+      "authors": "van der Meer, A.",
+      "title": "Gazpacho and the temperature objection: a rebuttal",
+      "venue": "Annals of Applied Gastronomy",
+      "year": 2017,
+      "volume": "31",
+      "pages": "204--219",
+      "doi": "10.0000/aag.2017.0031"
+    },
+    {
+      "key": "fitzgerald2023",
+      "short": "Fitzgerald and Osei",
+      "authors": "Fitzgerald, R. and Osei, K.",
+      "title": "Structural integrity decay in toasted grain matrices under prolonged immersion",
+      "venue": "Food Physics Letters",
+      "year": 2023,
+      "volume": "8(4)",
+      "pages": "e0412",
+      "doi": "10.0000/fpl.2023.0412"
+    },
+    {
+      "key": "nakamura2022",
+      "short": "Nakamura et al.",
+      "authors": "Nakamura, Y., Brill, D., and Aitken, C.",
+      "title": "A survey of consumer intuitions regarding liquid-solid food boundaries",
+      "venue": "Journal of Empirical Foodways",
+      "year": 2022,
+      "volume": "5(1)",
+      "pages": "17--44",
+      "doi": "10.0000/jef.2022.0051"
+    },
+    {
+      "key": "beaumont2020",
+      "short": "Beaumont",
+      "authors": "Beaumont, H.",
+      "title": "Against culinary essentialism",
+      "venue": "Review of Comestible Philosophy",
+      "year": 2020,
+      "volume": "42",
+      "pages": "551--578",
+      "doi": "10.0000/rcp.2020.0042"
+    },
+    {
+      "key": "okonkwo2021",
+      "short": "Okonkwo-Reyes and Lindqvist",
+      "authors": "Okonkwo-Reyes, M. and Lindqvist, T.",
+      "title": "Bowl geometry as a predictor of perceived soup-ness",
+      "venue": "Proceedings of the International Congress on Breakfast Systems",
+      "year": 2021,
+      "volume": null,
+      "pages": "112--127",
+      "doi": "10.0000/icbs.2021.0112"
+    }
+  ]
+}

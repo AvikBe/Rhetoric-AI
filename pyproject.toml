@@ -1,0 +1,27 @@
+[project]
+name = "rhetoric-ai"
+version = "0.1.0"
+description = "Generates satirical arXiv-style preprints to jokingly win arguments."
+requires-python = ">=3.11"
+dependencies = [
+    "jinja2>=3.1",
+    "pydantic>=2.6",
+    "matplotlib>=3.8",
+    "httpx>=0.27",
+]
+
+[project.scripts]
+rhetoric = "rhetoric.build:main"
+rhetoric-plan = "rhetoric.plan:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# The project is `rhetoric-ai` but the package dir is `rhetoric`, so hatchling
+# needs telling.
+[tool.hatch.build.targets.wheel]
+packages = ["rhetoric"]
+
+[tool.ruff]
+line-length = 100
