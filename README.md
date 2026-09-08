@@ -42,7 +42,7 @@ make tex
 make test
 ```
 
-79 tests, no API key or model required — `complete_json` is stubbed and the
+94 tests, no API key or model required — `complete_json` is stubbed and the
 render assertions stop at `paper.tex`. The tectonic build is covered too, and
 skipped when the binary is absent.
 
