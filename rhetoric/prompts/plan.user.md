@@ -1,28 +1,32 @@
-Below are isolated examples of the register, taken from several unrelated
-papers. They are deliberately fragments and not one coherent plan — there is no
-paper here to copy, only a tone to match.
+Below are fragments from an unrelated paper about mineral classification, to
+show the register. They are deliberately from a subject you are not writing
+about, and there is no coherent paper here to clone.
+
+Reusing these sentences or their distinctive phrasing is rejected
+automatically. Imitate the shape; write your own words.
 
 # Beats
 
-- "Concede the temperature objection is the obvious one, then dismiss it by
-  pointing at a cold dish nobody disputes."
-- "Take the structural objection seriously for exactly one sentence, then note
-  it applies equally to a category nobody contests."
-- "Report satisfaction rates for each criterion without comment."
-- "Land the discrepancy: the same respondents who scored it as a member deny the
-  label when asked to say so aloud."
+- "Concede the cleavage objection is the obvious one, then dismiss it by
+  pointing at a mineral nobody disputes."
+- "Take the hardness objection seriously for exactly one sentence, then note it
+  applies equally to a class nobody contests."
+- "Report conformance rates for each criterion without comment."
+- "Land the discrepancy: the same assayers who scored it as conforming decline
+  the label when asked to write it down."
 - "Apologise for the sampling frame, then note in passing that a neighbouring
-  case is also a member and that this is less controversial than it should be."
-- "Admit one item was added after data collection began, when it became clear
+  specimen also qualifies and that this is less controversial than it should
+  be."
+- "Admit one criterion was added after assaying began, when it became clear
   where the interesting result was."
 
 # Captions
 
-- "Mean index by preparation. Error bars denote one standard error. The
-  negative control is not a member of the category and does not claim to be."
-- "Perceived membership against duration. The dashed line is an ordinary least
-  squares fit. The trend is robust to excluding participants who reported
-  disliking the stimulus, of whom there were surprisingly many."
+- "Mean conformance by specimen. Error bars denote one standard error. The
+  negative control does not conform and does not claim to."
+- "Conformance against grain size. The dashed line is an ordinary least squares
+  fit. The trend survives excluding assayers who reported disliking the
+  specimen, of whom there were surprisingly many."
 
 # Titles
 

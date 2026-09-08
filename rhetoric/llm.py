@@ -53,7 +53,7 @@ def load_env_file(path: Path = ENV_FILE) -> None:
 # models differ, and it is not predictable from size or price. `--models` lists
 # what the account can actually reach.
 DEFAULT_MODEL: dict[Provider, str] = {
-    "openrouter": "qwen/qwen3-8b",
+    "openrouter": "qwen/qwen3.8-flash",
     "ollama": "qwen3:8b",
 }
 
@@ -169,6 +169,11 @@ def build_request(
             "messages": messages,
             "temperature": cfg.temperature,
             "max_tokens": cfg.max_tokens,
+            # Same trap as ollama's `think`, different provider: reasoning is
+            # default_enabled on many models and its tokens count against
+            # max_tokens, so the budget is spent before the JSON is closed.
+            # Harmless on models without a reasoning channel.
+            "reasoning": {"enabled": cfg.think},
             "response_format": {
                 "type": "json_schema",
                 "json_schema": {"name": name, "strict": True, "schema": schema},
@@ -179,6 +184,14 @@ def build_request(
 
 def _extract(cfg: ModelConfig, payload: dict[str, Any]) -> tuple[str, str | None]:
     """Return (content, finish_reason)."""
+    # OpenRouter reports upstream failures as HTTP 200 with an error body, so
+    # the status check upstream of here does not catch them. Without this the
+    # next line is a bare KeyError on 'choices'.
+    if error := payload.get("error"):
+        message = error.get("message", error) if isinstance(error, dict) else error
+        raw = (error.get("metadata") or {}).get("raw", "") if isinstance(error, dict) else ""
+        raise ModelError(f"{cfg.model}: {message}{f' -- {raw}' if raw else ''}"[:500])
+
     if cfg.provider == "ollama":
         return payload["message"]["content"], payload.get("done_reason")
     choice = payload["choices"][0]
@@ -237,7 +250,12 @@ def complete_json(
 
 
 def list_models(cfg: ModelConfig, limit: int = 25) -> list[dict[str, Any]]:
-    """Models the account can reach, cheapest first. OpenRouter only."""
+    """Models this design can actually use, cheapest first. OpenRouter only.
+
+    Filtered to models advertising `structured_outputs`: the whole pipeline
+    rests on the decoder enforcing a JSON schema, and a model that quietly
+    ignores `response_format` returns prose where a plan should be.
+    """
     if cfg.provider != "openrouter":
         raise ModelError("--models is only meaningful for openrouter")
 
@@ -247,10 +265,15 @@ def list_models(cfg: ModelConfig, limit: int = 25) -> list[dict[str, Any]]:
 
     rows = []
     for m in response.json().get("data", []):
-        pricing = m.get("pricing") or {}
+        if "structured_outputs" not in (m.get("supported_parameters") or []):
+            continue
         try:
-            out = float(pricing.get("completion", "0"))
+            out = float((m.get("pricing") or {}).get("completion", "0"))
         except (TypeError, ValueError):
+            continue
+        # Negative values are OpenRouter's dynamic-pricing sentinel, not a
+        # discount; sorting on them puts routers at the top of a "cheapest" list.
+        if out < 0:
             continue
         rows.append({"id": m.get("id", ""), "out_per_m": out * 1_000_000,
                      "context": m.get("context_length") or 0})

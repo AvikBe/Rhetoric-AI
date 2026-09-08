@@ -143,3 +143,84 @@ def _cfg():
         provider="openrouter", model="fake", temperature=0.9, max_tokens=100,
         num_ctx=8192, timeout=60, think=False, base_url="http://x", api_key="k",
     )
+
+
+class TestBorrowedPhrases:
+    """Live runs reproduced the register examples word-for-word.
+
+    deepseek-v4-flash lifted 5 of 7 example sentences from the prose prompt into
+    a single paper. A token blocklist cannot catch this -- the sentences carry
+    no distinctive proper nouns -- so the shingles are derived from the prompt
+    files themselves.
+    """
+
+    def test_verbatim_example_sentence_is_rejected(self) -> None:
+        from rhetoric.guards import _exemplar_shingles, assert_original
+
+        source = next(iter(_exemplar_shingles().values()))
+        with pytest.raises(ValueError, match="verbatim"):
+            assert_original(f"We begin as follows. {source} The result follows.")
+
+    def test_shingles_track_the_prompt_files(self) -> None:
+        """Derived, not hand-listed, so the ban cannot drift when prompts change."""
+        from rhetoric.guards import PROMPTS, _exemplar_shingles
+
+        _exemplar_shingles.cache_clear()
+        shingles = _exemplar_shingles()
+        assert len(shingles) > 50
+        # Collapsed, because the prompts wrap these sentences across indented
+        # lines while the stored sources are normalised to one line.
+        corpus = " ".join(
+            " ".join(p.read_text().split()) for p in PROMPTS.glob("*.user.md")
+        )
+        assert all(phrase in corpus for phrase in set(shingles.values()))
+
+    def test_ordinary_academic_prose_passes(self) -> None:
+        """The window must be long enough not to trip on normal phrasing."""
+        from rhetoric.guards import assert_original
+
+        assert_original(
+            "We recruited 240 adults and administered a five-item instrument. "
+            "Results indicate the effect is robust to excluding participants "
+            "who reported prior familiarity with the stimulus. All comparisons "
+            "are two-tailed and we report Cohen's d throughout."
+        )
+
+    def test_punctuation_becomes_a_space_not_nothing(self) -> None:
+        """Regression: the guard's answer depended on the serializer.
+
+        `_normalise` used to delete punctuation, so compact JSON
+        (`"claim to.","xlabel":"Item"`) fused into `claim toxlabelitem`. That
+        destroyed every phrase window near a field boundary, and the same plan
+        passed or failed depending on whether json.dumps or model_dump_json
+        produced the string.
+        """
+        from rhetoric.guards import _normalise
+
+        assert _normalise('claim to.","xlabel":"Item') == "claim to xlabel item"
+
+    def test_same_verdict_for_compact_and_spaced_json(self) -> None:
+        import json as _json
+
+        from rhetoric.guards import _exemplar_shingles, find_borrowed_phrases
+
+        source = next(iter(_exemplar_shingles().values()))
+        payload = {"caption": source, "xlabel": "Item"}
+        compact = _json.dumps(payload, separators=(",", ":"))
+        spaced = _json.dumps(payload, indent=2)
+        assert find_borrowed_phrases(compact) == find_borrowed_phrases(spaced) != []
+
+    def test_windows_do_not_span_separate_fields(self) -> None:
+        """Two innocent fields must not combine into a phantom match."""
+        from rhetoric.guards import _exemplar_shingles, find_borrowed_phrases
+
+        words = next(iter(_exemplar_shingles())).split()
+        head, tail = " ".join(words[:4]), " ".join(words[4:])
+        assert find_borrowed_phrases(head, tail) == []
+        assert find_borrowed_phrases(f"{head} {tail}") != []
+
+    def test_bare_surnames_are_blocked(self) -> None:
+        """The list held `marchetti2019`; the model wrote "Marchetti & van der Heijden"."""
+        from rhetoric.guards import find_copied
+
+        assert "Marchetti" in find_copied("as shown by Marchetti and colleagues")

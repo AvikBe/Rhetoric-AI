@@ -100,6 +100,26 @@ class PaperPlan(BaseModel):
     sections: list[PlanSection]
     citations: list[Citation]
 
+    def _texts(self) -> list[str]:
+        """Every human-written string, as separate items.
+
+        Passed individually rather than as one JSON blob so a phrase window
+        cannot straddle two unrelated fields.
+        """
+        texts = [self.title, self.short_title, self.field, *self.keywords]
+        texts += [self.dataset.population, self.dataset.instrument,
+                  self.dataset.key_stat, self.dataset.effect_size]
+        texts += [a.name for a in self.authors] + [a.affiliation for a in self.authors]
+        texts += self.abstract_beats
+        for section in self.sections:
+            texts += section.beats
+            if section.figure:
+                texts += [section.figure.caption, section.figure.xlabel,
+                          section.figure.ylabel, *section.figure.categories]
+        for c in self.citations:
+            texts += [c.short, c.authors, c.title, c.venue]
+        return texts
+
     @model_validator(mode="after")
     def _is_not_copied_from_the_exemplar(self) -> PaperPlan:
         """Reject wholesale reuse of the few-shot example.
@@ -107,7 +127,7 @@ class PaperPlan(BaseModel):
         The prompt asks for original names and numbers; models comply with the
         shape and ignore the request. This makes the instruction enforceable.
         """
-        assert_original(self.model_dump_json())
+        assert_original(*self._texts())
         for beat in self.abstract_beats + [b for s in self.sections for b in s.beats]:
             assert_no_latex(beat, "beat")
         return self
@@ -202,7 +222,16 @@ def repair(raw: dict, claim: str) -> tuple[dict, list[str]]:
             beats[i] = renumber(beat)
 
     for section in raw.get("sections", []):
+        # A model that means "no figure here" often emits an empty object rather
+        # than null, because the schema offers it the shape. Carrying no values,
+        # it says nothing; dropping it is unambiguous, and leaving it to
+        # validation costs a whole retry.
         figure = section.get("figure")
+        if figure is not None and not figure.get("values"):
+            section["figure"] = None
+            notes.append(f"dropped an empty figure on {section.get('heading', '?')}")
+            continue
+
         if figure and "label" in figure:
             slugged = _slug(figure["label"])
             if slugged != figure["label"]:

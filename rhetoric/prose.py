@@ -49,7 +49,7 @@ class SectionProse(BaseModel):
                     f"{MIN_PARAGRAPH_CHARS}. Each paragraph is a full academic "
                     "paragraph, not a sentence."
                 )
-        assert_original(" ".join(v))
+        assert_original(*v)
         return v
 
 
