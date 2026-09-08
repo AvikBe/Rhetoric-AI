@@ -5,10 +5,13 @@ OUT  ?= build
 # without the deps. `make venv` creates this.
 PY   ?= .venv/bin/python
 
-.PHONY: venv write paper tex open clean
+.PHONY: venv test write paper tex open clean
 
 venv:                 ## create .venv and install deps
-	uv venv --python 3.12 && uv pip install -e .
+	uv venv --python 3.12 && uv pip install -e . && uv pip install pytest ruff
+
+test:                 ## run the suite (no API key or model needed)
+	$(PY) -m pytest -q
 
 write:                ## claim -> plan -> prose -> spec -> PDF (needs an API key)
 	@mkdir -p $(OUT)

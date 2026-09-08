@@ -68,7 +68,9 @@ def compose(plan: PaperPlan, prose: Prose, disclosure: str = "subtle") -> PaperS
 def _today() -> str:
     from datetime import date
 
-    d = date.today()
+    # Local date is the intent: this is the date printed on the paper, not a
+    # timestamp, so a timezone-aware value would be wrong here.
+    d = date.today()  # noqa: DTZ011
     return f"{d.day} {d:%b} {d.year}"
 
 

@@ -10,6 +10,14 @@ dependencies = [
     "httpx>=0.27",
 ]
 
+[dependency-groups]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# `from tests.conftest import ...` needs the repo root importable.
+pythonpath = ["."]
+
 [project.scripts]
 rhetoric = "rhetoric.build:main"
 rhetoric-plan = "rhetoric.plan:main"

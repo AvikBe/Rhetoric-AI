@@ -37,6 +37,23 @@ make paper SPEC=specs/your_claim.json
 make tex
 ```
 
+## Tests
+
+```bash
+make test
+```
+
+79 tests, no API key or model required — `complete_json` is stubbed and the
+render assertions stop at `paper.tex`. The tectonic build is covered too, and
+skipped when the binary is absent.
+
+Every test corresponds to a bug that actually reached a broken PDF or a failed
+build; there is no coverage-padding here. The suite is mutation-checked: each
+fix is reverted in turn and the run must fail. That found two tests that passed
+against broken code — one asserted on a string the code never emits, and one
+used a fixture label that escaping does not change, so it could not tell a
+guarded interpolation from an unguarded one.
+
 ## Pipeline
 
 ```

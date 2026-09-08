@@ -1,0 +1,32 @@
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install
+        run: uv sync --all-extras --dev || (uv venv && uv pip install -e . pytest ruff)
+
+      # The PDF build test is skipped without it; installing here keeps the
+      # LaTeX template covered in CI.
+      - name: Install tectonic
+        run: |
+          curl -fsSL https://drop-sh.fullyjustified.net | sh
+          sudo mv tectonic /usr/local/bin/
+
+      - name: Lint
+        run: uv run ruff check rhetoric tests
+
+      - name: Test
+        run: uv run pytest -q
