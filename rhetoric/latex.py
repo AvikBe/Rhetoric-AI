@@ -54,6 +54,36 @@ def escape(text: str) -> str:
     return _ESCAPE_RE.sub(lambda m: _ESCAPES[m.group()], text)
 
 
+# Greek arrives in statistics prose ("Cohen's kappa") and has no glyph in the
+# Times text font, so XeTeX drops it *silently*: the PDF read "Cohen's  of 0.83"
+# with nothing between the words. Mapped to math mode, where the glyph exists.
+_GREEK = {
+    "α": r"$\alpha$", "β": r"$\beta$", "γ": r"$\gamma$", "δ": r"$\delta$",
+    "ε": r"$\epsilon$", "η": r"$\eta$", "θ": r"$\theta$", "κ": r"$\kappa$",
+    "λ": r"$\lambda$", "μ": r"$\mu$", "π": r"$\pi$", "ρ": r"$\rho$",
+    "σ": r"$\sigma$", "τ": r"$\tau$", "φ": r"$\phi$", "χ": r"$\chi$",
+    "ω": r"$\omega$", "Δ": r"$\Delta$", "Σ": r"$\Sigma$", "Ω": r"$\Omega$",
+    "×": r"$\times$", "±": r"$\pm$", "≤": r"$\leq$", "≥": r"$\geq$",
+    "≈": r"$\approx$", "≠": r"$\neq$", "°": r"$^\circ$",
+}
+
+
+def _fold_remaining(text: str) -> str:
+    """Last resort for characters with no glyph in the document font.
+
+    Anything still non-ASCII here would be dropped by the engine without a
+    warning, so fold it to its closest ASCII form and drop only what has none.
+    """
+    out = []
+    for ch in text:
+        if ord(ch) < 128:
+            out.append(ch)
+            continue
+        folded = unicodedata.normalize("NFKD", ch).encode("ascii", "ignore").decode()
+        out.append(folded)
+    return "".join(out)
+
+
 _OPENS_QUOTE = set(" \t\n([{-")
 
 
@@ -83,7 +113,9 @@ def typographic(text: str) -> str:
         text = text.replace(bad, good)
     text = _directional_quotes(text)
     text = re.sub(r"(?<!\.)\.\.\.(?!\.)", r"\\ldots{}", text)
-    return text
+    for char, macro in _GREEK.items():
+        text = text.replace(char, macro)
+    return _fold_remaining(text)
 
 
 def to_latex(text: str) -> Latex:

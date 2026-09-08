@@ -56,6 +56,30 @@ class TestTypography:
         )
 
 
+class TestGlyphCoverage:
+    """Regression: characters with no glyph vanish without a warning.
+
+    A live paper read "Cohen's  of 0.83" -- the kappa was dropped by XeTeX
+    because the Times text font has no Greek, and nothing in the build said so.
+    """
+
+    def test_greek_goes_to_math_mode(self) -> None:
+        assert to_latex("Cohen's \u03ba of 0.83") == "Cohen's $\\kappa$ of 0.83"
+
+    @pytest.mark.parametrize(
+        ("raw", "expected"), [("\u00b10.04", "$\\pm$0.04"), ("p \u2264 0.05", "p $\\leq$ 0.05")]
+    )
+    def test_maths_symbols(self, raw: str, expected: str) -> None:
+        assert to_latex(raw) == expected
+
+    def test_accents_fold_to_ascii(self) -> None:
+        assert to_latex("na\u00efve caf\u00e9") == "naive cafe"
+
+    def test_nothing_non_ascii_survives(self) -> None:
+        """Whatever is left would be silently dropped by the engine."""
+        assert all(ord(c) < 128 for c in to_latex("\u4f60\u597d \u03b1 \u2014 \u00e9 \u2265"))
+
+
 class TestIdentifiers:
     def test_underscore_is_rejected(self) -> None:
         """Regression: `\\label{fig:a\\_b}` killed the build.

@@ -4,10 +4,9 @@ Generates satirical arXiv-style preprints to jokingly win arguments. Every
 output is marked as fiction in four independent ways (see [Disclaimer
 layer](#disclaimer-layer)).
 
-**Status: stages 1–3 of 4.** Claim in, PDF out. Every stage is built and
-verified structurally; stages 2–3 have not yet been run end-to-end against a
-hosted model, which needs an API key (see [Model
-configuration](#model-configuration)).
+**Status: stages 1–3 of 4.** Claim in, PDF out, verified end-to-end against a
+hosted model. A full paper is a plan call plus seven parallel prose calls —
+roughly 90 seconds and a fraction of a cent.
 
 ## Quick start
 
@@ -143,6 +142,25 @@ on any comparable setup:
   10 minutes. Hosted inference is the answer if that matters — the model is a
   config string.
 
+### Things only a live run finds
+
+Every one of these passed the offline suite and still produced a wrong PDF or a
+failed run:
+
+- **Reasoning is on by default and its tokens count against `max_tokens`.**
+  Ollama's `think` and OpenRouter's `reasoning` are the same trap: the budget is
+  spent before the JSON closes. Both are disabled by default now.
+- **OpenRouter reports upstream failures as HTTP 200 with an error body**, so a
+  status check does not catch them and the next line is a bare `KeyError` on
+  `choices`.
+- **Glyphs with no font coverage vanish silently.** A paper read *"Cohen's  of
+  0.83"* — XeTeX dropped the kappa, with nothing in the log. Greek and maths
+  symbols now go to math mode and anything else folds to ASCII.
+- **natbib prints `short` and then the year**, so a model that puts the year in
+  `short` gets *"(Patel, 2023, 2023)"*.
+- **A model that means "no figure" emits an empty object**, not `null`, because
+  the schema offers it the shape.
+
 ### Why prose is one call per section
 
 A model asked for two thousand words of fabricated methodology in one go loses
@@ -177,21 +195,38 @@ exactly what failed.
 
 ### Few-shot examples get copied, not imitated
 
+This is the single biggest quality problem in the project, and it took two
+rounds to get right.
+
 Given a complete worked example, qwen3:8b returned a hot dog paper written by
-the cereal exemplar's authors, at the cereal exemplar's institutions, with its
-sample size, effect size and citation keys intact — while the prompt was
-explicitly telling it not to reuse any of them.
+the cereal exemplar's authors, at its institutions, with its sample size,
+effect size and citation keys intact — while the prompt was explicitly telling
+it not to reuse any of them. Fixing the names was not enough: the first hosted
+run then reproduced **5 of the 7 register example sentences word-for-word**,
+so the abstract was largely stitched together from the prompt.
 
-Asking louder does not fix this. Two things did:
+Three things fixed it:
 
-1. The few-shot in [plan.user.md](rhetoric/prompts/plan.user.md) is now
-   *fragments from unrelated papers* rather than one worked example. There is a
-   tone to match and no paper to clone.
-2. `EXEMPLAR_TOKENS` in [guards.py](rhetoric/guards.py) makes the instruction
-   enforceable. Distinctive names, journals and numbers from the prompts are
-   rejected in output, and the retry loop regenerates. Applies to both stages.
+1. **The examples are domain-locked.** They are now fragments about mineral
+   classification, so lifting one into a paper about food is both caught and
+   obviously wrong. They demonstrate the same moves.
+2. **`EXEMPLAR_TOKENS`** rejects distinctive names, journals and numbers. Keep
+   bare surnames in it, not just citation keys — the list held `marchetti2019`
+   and the model wrote "Marchetti & van der Heijden (2018)".
+3. **Phrase windows**, read from the prompt files themselves so the ban cannot
+   drift when the examples are edited.
 
-If you edit the prompts, add any new distinctive proper nouns to that list.
+The phrase check is two tests, because one threshold cannot do both jobs. A
+whole example sentence reproduced verbatim is leakage at any length. A long
+*span* is leakage even when the surrounding sentence differs. But a short
+shared tail is the register working as intended — adapting *"a replication
+using X rather than Y would be informative, and we have not conducted one"* to
+a new subject keeps a nine-word tail. At an eight-word window that was
+rejected, and one Limitations section failed four attempts running on the same
+construction and took the whole run down.
+
+If you edit the prompts, add any new distinctive proper nouns to
+`EXEMPLAR_TOKENS`. The phrases look after themselves.
 
 ### Two invariants worth preserving
 

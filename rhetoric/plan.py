@@ -208,6 +208,18 @@ def repair(raw: dict, claim: str) -> tuple[dict, list[str]]:
     if remap:
         notes.append(f"normalised {len(remap)} citation key(s)")
 
+    # natbib renders `short` and then the year, so a year inside `short` prints
+    # twice: "(Patel, 2023, 2023)".
+    trimmed = 0
+    for citation in raw.get("citations", []):
+        short = (citation.get("short") or "").strip()
+        without = re.sub(r"[,;]?\s*\(?\s*\d{4}[a-z]?\s*\)?$", "", short).strip(" ,;")
+        if without and without != short:
+            citation["short"] = without
+            trimmed += 1
+    if trimmed:
+        notes.append(f"removed a duplicated year from {trimmed} citation label(s)")
+
     def renumber(text: str) -> str:
         def sub(match: re.Match[str]) -> str:
             keys = [remap.get(k.strip(), _alnum(k.strip())) for k in match.group(1).split(",")]

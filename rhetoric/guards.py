@@ -35,10 +35,19 @@ EXEMPLAR_TOKENS = (
     "gazpacho", "Gazpacho", "bisque", "Bisque", "Chilled Suspension", "CSPI", "soup-ness",
 )
 
-# Length of the word window used to detect verbatim reuse of a prompt example.
-# Eight is specific enough that ordinary academic phrasing does not trip it, and
-# short enough to catch a single borrowed clause.
-SHINGLE = 8
+# Two separate tests, because one threshold cannot serve both jobs.
+#
+# A whole example sentence reproduced verbatim is always leakage, however short:
+# "This is unfortunate, because the question is tractable." is eight words and
+# was appearing in every paper.
+#
+# A long *span* is leakage even when the sentence around it differs. But a short
+# shared tail is legitimate imitation -- adapting "a replication using X rather
+# than Y would be informative, and we have not conducted one" to a new subject
+# keeps a nine-word tail, and that is the register doing its job. At eight words
+# this rejected the adaptation and the Limitations section failed four attempts
+# running on the same construction.
+SHINGLE = 12
 
 
 def find_copied(*texts: str) -> list[str]:
@@ -59,32 +68,50 @@ def _normalise(text: str) -> str:
 
 
 @lru_cache(maxsize=1)
-def _exemplar_shingles() -> dict[str, str]:
-    """Word windows from the register examples, mapped back to their source.
+def _exemplars() -> list[str]:
+    """The register examples, normalised, read from the prompt files.
 
-    Derived from the prompt files rather than hand-listed, so the ban cannot
-    drift out of sync when the examples are edited.
+    Derived rather than hand-listed, so the ban cannot drift out of sync when
+    the examples are edited.
     """
-    shingles: dict[str, str] = {}
+    quoted: list[str] = []
     for path in sorted(PROMPTS.glob("*.user.md")):
-        for quoted in re.findall(r'^\s*-\s+"(.+?)"\s*$', path.read_text(encoding="utf-8"), re.MULTILINE | re.DOTALL):
-            words = _normalise(quoted).split()
-            for i in range(len(words) - SHINGLE + 1):
-                shingles[" ".join(words[i : i + SHINGLE])] = " ".join(quoted.split())
-    return shingles
+        text = path.read_text(encoding="utf-8")
+        quoted += re.findall(r'^\s*-\s+"(.+?)"\s*$', text, re.MULTILINE | re.DOTALL)
+    return [_normalise(q) for q in quoted]
+
+
+@lru_cache(maxsize=1)
+def _exemplar_shingles() -> set[str]:
+    windows: set[str] = set()
+    for words in (e.split() for e in _exemplars()):
+        windows |= {" ".join(words[i : i + SHINGLE]) for i in range(len(words) - SHINGLE + 1)}
+    return windows
 
 
 def find_borrowed_phrases(*texts: str) -> list[str]:
-    """Register examples reproduced word-for-word rather than imitated.
+    """Overlaps with the register examples that count as reuse, not imitation.
 
-    Each text is windowed separately, so a shingle can never span two unrelated
-    fields and invent a match that neither field contains.
+    Returns the offending words themselves rather than the example they came
+    from: the model has to be told which clause to rewrite, and a whole source
+    sentence does not say that when only part of it was reused.
+
+    Each text is windowed separately, so a span can never straddle two unrelated
+    fields and invent a match neither of them contains.
     """
-    haystack: set[str] = set()
+    found: set[str] = set()
     for text in texts:
-        words = _normalise(text).split()
-        haystack |= {" ".join(words[i : i + SHINGLE]) for i in range(len(words) - SHINGLE + 1)}
-    return sorted({source for key, source in _exemplar_shingles().items() if key in haystack})
+        normalised = _normalise(text)
+        # A full example sentence, at any length.
+        found |= {e for e in _exemplars() if e and e in normalised}
+
+        # Or a long span of one.
+        words = normalised.split()
+        for i in range(len(words) - SHINGLE + 1):
+            window = " ".join(words[i : i + SHINGLE])
+            if window in _exemplar_shingles():
+                found.add(window)
+    return sorted(found)
 
 
 def assert_original(*texts: str) -> None:
@@ -101,8 +128,9 @@ def assert_original(*texts: str) -> None:
         )
     if borrowed := find_borrowed_phrases(*texts):
         raise ValueError(
-            f"reproduced an example sentence verbatim: {borrowed[0][:90]!r}. "
-            "The examples show register only -- write your own sentences."
+            f"this reuses wording from the register examples: {borrowed[0][:110]!r}. "
+            "Rewrite that clause in your own words. Imitating the shape of the "
+            "examples is fine; repeating their wording is not."
         )
 
 
