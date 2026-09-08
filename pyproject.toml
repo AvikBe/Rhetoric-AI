@@ -13,6 +13,8 @@ dependencies = [
 [project.scripts]
 rhetoric = "rhetoric.build:main"
 rhetoric-plan = "rhetoric.plan:main"
+rhetoric-prose = "rhetoric.prose:main"
+rhetoric-compose = "rhetoric.compose:main"
 
 [build-system]
 requires = ["hatchling"]

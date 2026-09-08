@@ -7,7 +7,7 @@ OpenAI-compatible endpoints (OpenRouter et al.) take one in `response_format`.
 
 Configured entirely from the environment so swapping models is a config change:
 
-    RHETORIC_PROVIDER   ollama | openrouter        (default: ollama)
+    RHETORIC_PROVIDER   openrouter | ollama        (default: openrouter)
     RHETORIC_MODEL      provider-specific model id
     RHETORIC_TEMPERATURE                           (default: 0.9)
     RHETORIC_MAX_TOKENS                            (default: 6000)
@@ -47,6 +47,7 @@ def load_env_file(path: Path = ENV_FILE) -> None:
             continue
         key, _, value = line.partition("=")
         os.environ.setdefault(key.strip(), value.strip().strip("\"'"))
+
 
 # Starting points only. Pick the real one by eval -- deadpan register is where
 # models differ, and it is not predictable from size or price. `--models` lists

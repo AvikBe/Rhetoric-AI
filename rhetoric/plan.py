@@ -23,6 +23,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ValidationError, model_validator
 
+from .guards import assert_no_latex, assert_original
 from .llm import ModelConfig, ModelError, build_request, complete_json, list_models
 from .schema import Citation, Dataset, FigureKind
 
@@ -36,21 +37,6 @@ SectionHeading = Literal[
 ]
 CANONICAL_ORDER = list(SectionHeading.__args__)
 REQUIRED_SECTIONS = {"Introduction", "Methods", "Results", "Conclusion"}
-
-# Few-shot examples get copied, not imitated. qwen3:8b handed back a hot dog
-# paper written by the cereal exemplar's authors, at the cereal exemplar's
-# institutions, with its sample size, effect size and citation keys intact --
-# despite being told in the prompt not to. Asking louder does not work; checking
-# does. These are the distinctive tokens from prompts and reference material
-# that must never appear in generated output.
-EXEMPLAR_TOKENS = (
-    "Okonkwo-Reyes", "Lindqvist", "Beaumont", "Whitmore", "Breakfast Dynamics",
-    "vandermeer", "fitzgerald2023", "marchetti2019", "nakamura2022", "okonkwo2021",
-    "Applied Gastronomy", "Culinary Ontology", "Food Physics Letters",
-    "Empirical Foodways", "Comestible Philosophy",
-    "1247", "1.84", "89.2", "gazpacho", "Gazpacho", "bisque", "Bisque",
-    "Chilled Suspension", "CSPI", "soup-ness",
-)
 
 # What each figure kind reads off `categories` / `values` / `x_min` / `x_max`.
 # synth.py expands these into observations.
@@ -121,12 +107,9 @@ class PaperPlan(BaseModel):
         The prompt asks for original names and numbers; models comply with the
         shape and ignore the request. This makes the instruction enforceable.
         """
-        blob = self.model_dump_json()
-        if found := sorted({t for t in EXEMPLAR_TOKENS if t in blob}):
-            raise ValueError(
-                f"copied from the example: {found}. Invent your own authors, "
-                "institutions, sample size, statistics and references."
-            )
+        assert_original(self.model_dump_json())
+        for beat in self.abstract_beats + [b for s in self.sections for b in s.beats]:
+            assert_no_latex(beat, "beat")
         return self
 
     @model_validator(mode="after")

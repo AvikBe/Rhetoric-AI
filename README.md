@@ -4,10 +4,10 @@ Generates satirical arXiv-style preprints to jokingly win arguments. Every
 output is marked as fiction in four independent ways (see [Disclaimer
 layer](#disclaimer-layer)).
 
-**Status: stages 1–2 of 4.** The renderer is complete and verified, and a claim
-now generates a plan via schema-constrained decoding. Stage 3 (prose) is not
-built, so body text is currently the plan's beats used as placeholders — see
-[Pipeline](#pipeline).
+**Status: stages 1–3 of 4.** Claim in, PDF out. Every stage is built and
+verified structurally; stages 2–3 have not yet been run end-to-end against a
+hosted model, which needs an API key (see [Model
+configuration](#model-configuration)).
 
 ## Quick start
 
@@ -40,32 +40,43 @@ make tex
 ## Pipeline
 
 ```
-claim ──▶ PaperPlan ──▶ [stage 3: prose] ──▶ PaperSpec ──▶ paper.tex ──▶ PDF
-          (stage 2)                          (compose)      (Jinja2)    (tectonic)
-             │                                   │
-        constrained                         synth ──▶ matplotlib ──▶ *.png
-          decode
+claim ──▶ PaperPlan ──▶ prose ──▶ PaperSpec ──▶ paper.tex ──▶ PDF
+          (stage 2)    (stage 3)  (compose)     (Jinja2)    (tectonic)
+             │             │          │
+         constrained   fanned out   synth ──▶ matplotlib ──▶ *.png
+           decode      per section
 ```
 
-Stage 3 does not exist yet, so `compose --stub` uses the plan's beats as
-placeholder body text. Everything else on the path is real:
-
-```bash
-.venv/bin/python -m rhetoric.plan --claim "A hot dog is a sandwich" -o plan.json
-```
+The whole thing:
 
 ```bash
-.venv/bin/python -m rhetoric.compose --plan plan.json --stub -o specs/hotdog.json
+make write CLAIM="A hot dog is a sandwich"
+```
+
+Or one stage at a time — `plan.json` is worth reading and editing by hand
+before spending tokens on prose:
+
+```bash
+.venv/bin/python -m rhetoric.plan  --claim "A hot dog is a sandwich" -o plan.json
 ```
 
 ```bash
-make paper SPEC=specs/hotdog.json
+.venv/bin/python -m rhetoric.prose --plan plan.json -o prose.json
 ```
+
+```bash
+.venv/bin/python -m rhetoric.compose --plan plan.json --prose prose.json -o specs/hotdog.json
+```
+
+`compose --stub` substitutes the plan's beats for prose, which renders a real
+PDF without stage 3 — useful for working on the template.
 
 | File | Role |
 |---|---|
 | [llm.py](rhetoric/llm.py) | Schema-constrained decoding against Ollama or any OpenAI-shaped endpoint. |
 | [plan.py](rhetoric/plan.py) | Stage 2. `PaperPlan`, the repair pass, and the retry loop. |
+| [prose.py](rhetoric/prose.py) | Stage 3. One call per section, fanned out concurrently. |
+| [guards.py](rhetoric/guards.py) | Checks that make prompt instructions enforceable. |
 | [prompts/](rhetoric/prompts) | The register lives here. Iterate without touching code. |
 | [compose.py](rhetoric/compose.py) | Plan + prose → `PaperSpec`. The seam stage 3 plugs into. |
 | [synth.py](rhetoric/synth.py) | Figure shape → observations. |
@@ -78,18 +89,32 @@ make paper SPEC=specs/hotdog.json
 
 ### Model configuration
 
+Put the key in `.env` at the repo root — gitignored, loaded automatically,
+never logged:
+
 ```bash
-export RHETORIC_PROVIDER=ollama      # or: openrouter
-export RHETORIC_MODEL=qwen3:8b       # provider-specific id
-export RHETORIC_MAX_TOKENS=6000      # a plan needs ~5k
-export RHETORIC_NUM_CTX=8192         # ollama; oversizing this is not free
-export RHETORIC_TIMEOUT=2400         # local models are slow
+echo 'OPENROUTER_API_KEY=sk-or-...' > .env
+```
+
+```bash
+.venv/bin/python -m rhetoric.plan --models    # reachable models, cheapest first
+```
+
+Defaults to OpenRouter. Everything else is optional:
+
+```bash
+export RHETORIC_MODEL=...             # provider-specific id
+export RHETORIC_MAX_TOKENS=6000       # a plan needs ~5k
+export RHETORIC_TIMEOUT=600
+export RHETORIC_PROVIDER=ollama       # local; then RHETORIC_NUM_CTX applies
 ```
 
 `--dry-run` prints the exact request without sending it.
 
-Three things measured on qwen3:8b, an M2 with 17 GB, that will bite on any
-comparable setup:
+#### If you do run locally
+
+Three things measured on qwen3:8b on an M2 with 17 GB, all of which will bite
+on any comparable setup:
 
 - **Reasoning models must have thinking disabled.** The grammar constrains the
   content channel, not the reasoning one, so qwen3 spent 200 of 200 tokens on a
@@ -100,6 +125,17 @@ comparable setup:
 - **It is slow.** ~3 tok/s for an 8B on this machine, so a plan takes roughly
   10 minutes. Hosted inference is the answer if that matters — the model is a
   config string.
+
+### Why prose is one call per section
+
+A model asked for two thousand words of fabricated methodology in one go loses
+track of its own study halfway through, and every section after that quietly
+contradicts the ones before. So each section gets its own call, handed the
+pinned `dataset` and — where the section has one — the figure's actual numbers,
+so Results quotes the bars it is describing rather than inventing a second set.
+
+The calls are independent, so they run concurrently (`--workers`, default 4)
+and wall-clock time is roughly one section rather than seven.
 
 ### What the schema enforces vs. what the prompt asks for
 
@@ -134,9 +170,9 @@ Asking louder does not fix this. Two things did:
 1. The few-shot in [plan.user.md](rhetoric/prompts/plan.user.md) is now
    *fragments from unrelated papers* rather than one worked example. There is a
    tone to match and no paper to clone.
-2. `EXEMPLAR_TOKENS` in [plan.py](rhetoric/plan.py) makes the instruction
+2. `EXEMPLAR_TOKENS` in [guards.py](rhetoric/guards.py) makes the instruction
    enforceable. Distinctive names, journals and numbers from the prompts are
-   rejected in output, and the retry loop regenerates.
+   rejected in output, and the retry loop regenerates. Applies to both stages.
 
 If you edit the prompts, add any new distinctive proper nouns to that list.
 
@@ -201,14 +237,13 @@ Plus three things that fail closed if someone tries to check the paper:
 
 ## Roadmap
 
-Stages 1 and 2 are done. Remaining:
+Stages 1–3 are done. Remaining:
 
-3. **Section generation** — fan out one call per section, each receiving the
-   pinned `dataset` and that section's beats, writing to `Prose` in
-   [compose.py](rhetoric/compose.py). Include 2–3 exemplar paragraphs from
-   `specs/cereal_soup.json` in the prompt: small models drift into telling
-   jokes, and the humour depends entirely on nobody breaking character.
 4. **Serve it** — FastAPI + Redis/arq, since a compile takes several seconds.
+
+Before that, the thing actually worth doing: run stages 2–3 against a few
+models and read the Methods sections. Deadpan register is where models differ
+and it is not predictable from size or price.
 
 Model choice: route through OpenRouter so a flash-tier open model is a config
 string, and pick on output quality rather than price — at ~20k output tokens a
