@@ -47,7 +47,34 @@ class TestProseValidation:
 
     def test_exemplar_leakage_is_rejected(self) -> None:
         with pytest.raises(ValidationError, match="copied from the example"):
-            SectionProse(paragraphs=["The gazpacho comparison holds. " * 10])
+            SectionProse(paragraphs=["The feldspar comparison holds. " * 10])
+
+    def test_abstract_may_not_review_the_literature(self) -> None:
+        """Real abstracts carry nought to two references."""
+        with pytest.raises(ValidationError, match="abstract cites"):
+            SectionProse.model_validate(
+                {"paragraphs": [PARAGRAPH + "See [[a]] [[b]] [[c]] [[d]]."]},
+                context={"heading": ABSTRACT},
+            )
+
+    def test_abstract_with_two_citations_is_fine(self) -> None:
+        SectionProse.model_validate(
+            {"paragraphs": [PARAGRAPH + "See [[a]] [[b]]."]}, context={"heading": ABSTRACT}
+        )
+
+    def test_one_source_cannot_carry_a_section(self) -> None:
+        with pytest.raises(ValidationError, match="cited more than"):
+            SectionProse.model_validate(
+                {"paragraphs": [PARAGRAPH + "See [[a]] [[a]].", PARAGRAPH + "And [[a]] [[a]]."]},
+                context={"heading": "Methods"},
+            )
+
+    def test_body_sections_may_cite_a_framework_repeatedly(self) -> None:
+        """Citing an adopted framework across a paper is what real papers do."""
+        SectionProse.model_validate(
+            {"paragraphs": [PARAGRAPH + "Following [[a]].", PARAGRAPH + "Per [[a]] and [[b]]."]},
+            context={"heading": "Methods"},
+        )
 
     def test_paragraph_cap(self) -> None:
         with pytest.raises(ValidationError, match="1-5 paragraphs"):

@@ -23,7 +23,7 @@ class TestEveryKindRenders:
         "spec",
         [
             planned("bar_errorbar", "bars", ["a", "b", "c"], [8.1, 7.6, 2.1]),
-            planned("box", "boxes", ["a", "b"], [8.0, 6.5], spread=0.6),
+            planned("box", "boxes", ["a", "b"], [8.0, 2.4], spread=0.6),
             planned("scatter_regression", "scatter", [], [2.0, 8.4], x_min=0, x_max=90),
             planned("line", "lines", ["one", "two"], [7.0, 6.4], x_min=0, x_max=9),
         ],
@@ -80,7 +80,7 @@ class TestSynthesis:
 
     def test_expanded_figure_satisfies_the_render_schema(self) -> None:
         spec = PlannedFigure.model_validate(
-            planned("box", "boxes", ["a", "b"], [8.0, 6.5], spread=0.5)
+            planned("box", "boxes", ["a", "b"], [8.0, 2.4], spread=0.5)
         )
         assert isinstance(synth.expand(spec), Figure)
 
@@ -91,6 +91,24 @@ class TestPlannedFigureValidation:
             PlannedFigure.model_validate(
                 planned("bar_errorbar", "bars", ["a", "b", "c"], [1.0, 2.0])
             )
+
+    def test_flat_chart_is_rejected(self) -> None:
+        """Regression: a live paper plotted three visually identical bars.
+
+        0.92 / 0.95 / 0.89 with spread 0.04 -- the differences were smaller than
+        the error bars, so the figure showed nothing at all.
+        """
+        with pytest.raises(ValueError, match="no contrast"):
+            PlannedFigure.model_validate(
+                planned("bar_errorbar", "flat", ["a", "b", "c"], [0.92, 0.95, 0.89], spread=0.04)
+            )
+
+    def test_negative_control_gives_contrast(self) -> None:
+        spec = planned("bar_errorbar", "ok", ["a", "b", "ctrl"], [7.8, 7.6, 2.1], spread=0.4)
+        assert PlannedFigure.model_validate(spec).values[-1] == 2.1
+
+    def test_single_value_needs_no_contrast(self) -> None:
+        PlannedFigure.model_validate(planned("bar_errorbar", "one", ["a"], [5.0], spread=1.0))
 
     def test_line_needs_series_names(self) -> None:
         with pytest.raises(ValueError, match="no series names"):

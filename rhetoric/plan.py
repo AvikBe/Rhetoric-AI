@@ -38,6 +38,10 @@ SectionHeading = Literal[
 CANONICAL_ORDER = list(SectionHeading.__args__)
 REQUIRED_SECTIONS = {"Introduction", "Methods", "Results", "Conclusion"}
 
+# A bar/box chart must span at least this many error bars, or it reads as three
+# identical columns.
+MIN_CONTRAST = 3.0
+
 # What each figure kind reads off `categories` / `values` / `x_min` / `x_max`.
 # synth.py expands these into observations.
 FIGURE_SHAPE_DOC = {
@@ -79,6 +83,20 @@ class PlannedFigure(BaseModel):
             )
         if self.kind == "line" and not self.categories:
             raise ValueError(f"line figure {self.label!r} has no series names")
+
+        # A chart whose bars differ by less than their own error bars shows
+        # nothing. One live paper plotted 0.92 / 0.95 / 0.89 with spread 0.04:
+        # three identical bars, no visible finding. Contrast usually comes from
+        # a negative control, which is also where the joke lives.
+        if self.kind in ("bar_errorbar", "box") and len(self.values) > 1:
+            spread = abs(self.spread) or 0.01
+            if (max(self.values) - min(self.values)) < MIN_CONTRAST * spread:
+                raise ValueError(
+                    f"figure {self.label!r} has no contrast: values {self.values} span "
+                    f"{max(self.values) - min(self.values):.3g} but the error bars are "
+                    f"{spread:.3g}. Compare items that genuinely differ and include a "
+                    "negative control that scores far lower."
+                )
         return self
 
 

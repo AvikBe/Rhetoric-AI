@@ -4,9 +4,9 @@ Generates satirical arXiv-style preprints to jokingly win arguments. Every
 output is marked as fiction in four independent ways (see [Disclaimer
 layer](#disclaimer-layer)).
 
-**Status: stages 1–3 of 4.** Claim in, PDF out, verified end-to-end against a
-hosted model. A full paper is a plan call plus seven parallel prose calls —
-roughly 90 seconds and a fraction of a cent.
+**Status: complete.** Claim in, PDF out, on the command line or over HTTP. A
+full paper is a plan call plus seven parallel prose calls — roughly 90 seconds
+and a fraction of a cent.
 
 ## Quick start
 
@@ -42,7 +42,7 @@ make tex
 make test
 ```
 
-94 tests, no API key or model required — `complete_json` is stubbed and the
+141 tests, no API key or model required — `complete_json` is stubbed and the
 render assertions stop at `paper.tex`. The tectonic build is covered too, and
 skipped when the binary is absent.
 
@@ -69,6 +69,25 @@ The whole thing:
 make write CLAIM="A hot dog is a sandwich"
 ```
 
+Or serve it:
+
+```bash
+make serve
+```
+
+```bash
+curl -X POST localhost:8000/papers -H 'content-type: application/json' -d '{"claim": "A hot dog is a sandwich"}'
+```
+
+A paper takes about ninety seconds, so `POST /papers` returns a job id and the
+work happens in the background. Poll `GET /papers/{id}` and fetch
+`GET /papers/{id}/pdf` when it is `done`. Interactive docs at `/docs`.
+
+**The API cannot turn the disclosure layer off.** `disclosure` chooses how loud
+the markings are, never whether they exist. Serving this makes it easy to hand
+someone a paper that looks real, and the markings are what keep that a joke
+rather than a forgery.
+
 Or one stage at a time — `plan.json` is worth reading and editing by hand
 before spending tokens on prose:
 
@@ -89,6 +108,9 @@ PDF without stage 3 — useful for working on the template.
 
 | File | Role |
 |---|---|
+| [app.py](rhetoric/app.py) | Stage 4. The HTTP surface. |
+| [jobs.py](rhetoric/jobs.py) | Filesystem job store, one directory per job. |
+| [pipeline.py](rhetoric/pipeline.py) | The whole run as one call. CLI and API share it. |
 | [llm.py](rhetoric/llm.py) | Schema-constrained decoding against Ollama or any OpenAI-shaped endpoint. |
 | [plan.py](rhetoric/plan.py) | Stage 2. `PaperPlan`, the repair pass, and the retry loop. |
 | [prose.py](rhetoric/prose.py) | Stage 3. One call per section, fanned out concurrently. |
@@ -161,6 +183,17 @@ failed run:
 - **A model that means "no figure" emits an empty object**, not `null`, because
   the schema offers it the shape.
 
+### Why the queue is a thread pool and a directory
+
+The plan said Redis and arq. That is right for a fleet of workers and wrong
+here: it makes running the thing at all require standing up a broker, for a
+workload of a handful of long HTTP calls and one subprocess.
+
+Each job is a directory holding its own status file and artifacts, which the
+pipeline was already writing. So the queue is a thread pool, the state is on
+disk, and finished work survives a restart. If this ever needs more than one
+machine, swapping [jobs.py](rhetoric/jobs.py) for arq is the whole migration.
+
 ### Why prose is one call per section
 
 A model asked for two thousand words of fabricated methodology in one go loses
@@ -210,9 +243,14 @@ Three things fixed it:
 1. **The examples are domain-locked.** They are now fragments about mineral
    classification, so lifting one into a paper about food is both caught and
    obviously wrong. They demonstrate the same moves.
-2. **`EXEMPLAR_TOKENS`** rejects distinctive names, journals and numbers. Keep
-   bare surnames in it, not just citation keys — the list held `marchetti2019`
-   and the model wrote "Marchetti & van der Heijden (2018)".
+2. **`EXEMPLAR_TOKENS`** rejects distinctive nouns — but *only ones that appear
+   in a prompt*, which a test asserts. The list once carried terms from
+   `specs/cereal_soup.json`, a reference output the model never sees, so those
+   entries could only fire on a coincidence. They did: three runs in a row died
+   because the model independently coined the "Journal of Culinary Ontology",
+   which is simply what a paper on food taxonomy would cite. **Banning an
+   invention is worse than missing a copy** — the retry loop can fix a copy, but
+   there is nothing to fix in a coincidence.
 3. **Phrase windows**, read from the prompt files themselves so the ban cannot
    drift when the examples are edited.
 
@@ -287,15 +325,12 @@ Plus three things that fail closed if someone tries to check the paper:
 - A **Disclaimer section** names the claim, the non-existent sample and the
   invented statistic explicitly.
 
-## Roadmap
+## What to do next
 
-Stages 1–3 are done. Remaining:
-
-4. **Serve it** — FastAPI + Redis/arq, since a compile takes several seconds.
-
-Before that, the thing actually worth doing: run stages 2–3 against a few
-models and read the Methods sections. Deadpan register is where models differ
-and it is not predictable from size or price.
+The thing actually worth doing next: run a few models over the same claims and
+read the Methods sections. Deadpan register is where they differ, and it is not
+predictable from size or price. `deepseek-v4-flash` is simply the first one
+that worked.
 
 Model choice: route through OpenRouter so a flash-tier open model is a config
 string, and pick on output quality rather than price — at ~20k output tokens a

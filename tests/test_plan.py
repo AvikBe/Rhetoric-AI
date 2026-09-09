@@ -66,7 +66,7 @@ class TestPlanValidators:
     def test_duplicate_figure_labels(self, plan_dict: dict) -> None:
         """Two figures sharing a label overwrite each other's PNG silently."""
         plan_dict["sections"][1]["figure"] = figure(
-            "bar_errorbar", "sci-by-form", ["a", "b"], [1.0, 2.0]
+            "bar_errorbar", "sci-by-form", ["a", "b"], [1.0, 6.0]
         )
         with pytest.raises(ValidationError, match="duplicate figure labels"):
             PaperPlan.model_validate(plan_dict)
@@ -90,9 +90,8 @@ class TestPlanValidators:
         ]
 
     def test_exemplar_leakage_is_rejected(self, plan_dict: dict) -> None:
-        """qwen3:8b returned the exemplar's authors and sample size verbatim."""
-        plan_dict["authors"][0]["name"] = "T. Lindqvist"
-        plan_dict["dataset"]["n"] = 1247
+        """Live models lifted the prompt's illustrations into their own papers."""
+        plan_dict["authors"][0]["affiliation"] = "Institute for Applied Sedimentary Dynamics"
         with pytest.raises(ValidationError, match="copied from the example"):
             PaperPlan.model_validate(plan_dict)
 
@@ -110,7 +109,7 @@ class TestRetryLoop:
         out-of-memory crash, and it buried the current error under stale ones.
         """
         broken = copy.deepcopy(plan_dict)
-        broken["authors"][0]["name"] = "T. Lindqvist"  # fails leakage
+        broken["authors"][0]["affiliation"] = "Sedimentary Dynamics"  # fails leakage
         seen: list[str] = []
 
         def fake(cfg, system, user, schema, name="response"):
@@ -131,7 +130,7 @@ class TestRetryLoop:
 
     def test_feedback_is_concise(self, plan_dict: dict) -> None:
         """Pydantic's full rendering embeds the entire input JSON."""
-        plan_dict["authors"][0]["name"] = "T. Lindqvist"
+        plan_dict["authors"][0]["affiliation"] = "Sedimentary Dynamics"
         try:
             PaperPlan.model_validate(plan_dict)
         except ValidationError as exc:
@@ -155,6 +154,40 @@ def _cfg():
         provider="openrouter", model="fake", temperature=0.9, max_tokens=100,
         num_ctx=8192, timeout=60, think=False, base_url="http://x", api_key="k",
     )
+
+
+class TestExemplarTokens:
+    def test_every_token_appears_in_a_prompt(self) -> None:
+        """Regression: the list drifted out of sync and killed three live runs.
+
+        It carried nouns from specs/cereal_soup.json, which the model never sees
+        -- that file is a reference output, not a prompt input. So those entries
+        could only ever fire on a coincidence, and one did: the model coined the
+        "Journal of Culinary Ontology" by itself, which is simply what a paper
+        about food taxonomy would cite. Every attempt was rejected for
+        plagiarising a document it had never been shown.
+
+        Banning an invention is worse than missing a copy: the retry loop can
+        fix a copy, but it cannot guess which coincidence offended.
+        """
+        from rhetoric.guards import EXEMPLAR_TOKENS, PROMPTS
+
+        corpus = " ".join(p.read_text() for p in PROMPTS.glob("*.md"))
+        orphans = [t for t in EXEMPLAR_TOKENS if t.lower() not in corpus.lower()]
+        assert not orphans, (
+            f"{orphans} are in no prompt, so they can only reject coincidences. "
+            "Remove them, or put them in a prompt."
+        )
+
+    def test_a_plausible_invention_is_not_rejected(self) -> None:
+        from rhetoric.guards import find_copied
+
+        assert find_copied("Journal of Culinary Ontology, 14(2), 88-113") == []
+
+    def test_a_genuine_copy_is_still_caught(self) -> None:
+        from rhetoric.guards import find_copied
+
+        assert find_copied("calibrated on cleaved feldspar") == ["feldspar"]
 
 
 class TestBorrowedPhrases:
@@ -243,8 +276,8 @@ class TestBorrowedPhrases:
             "are two-tailed and we report Cohen's d throughout."
         )
 
-    def test_bare_surnames_are_blocked(self) -> None:
-        """The list held `marchetti2019`; the model wrote "Marchetti & van der Heijden"."""
+    def test_a_citation_key_from_the_prompt_is_blocked(self) -> None:
+        """plan.system.md uses `marchetti2019` to illustrate the key format."""
         from rhetoric.guards import find_copied
 
-        assert "Marchetti" in find_copied("as shown by Marchetti and colleagues")
+        assert "marchetti2019" in find_copied("cites [[marchetti2019]] throughout")

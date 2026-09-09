@@ -5,13 +5,16 @@ OUT  ?= build
 # without the deps. `make venv` creates this.
 PY   ?= .venv/bin/python
 
-.PHONY: venv test write paper tex open clean
+.PHONY: venv test serve write paper tex open clean
 
 venv:                 ## create .venv and install deps
 	uv venv --python 3.12 && uv pip install -e . && uv pip install pytest ruff
 
 test:                 ## run the suite (no API key or model needed)
 	$(PY) -m pytest -q
+
+serve:                ## HTTP API on :8000 (needs an API key)
+	$(PY) -m uvicorn rhetoric.app:app --reload --port 8000
 
 write:                ## claim -> plan -> prose -> spec -> PDF (needs an API key)
 	@mkdir -p $(OUT)
@@ -30,4 +33,4 @@ open: paper
 	open $(OUT)/*-SATIRE.pdf
 
 clean:
-	rm -rf $(OUT)
+	rm -rf $(OUT) jobs

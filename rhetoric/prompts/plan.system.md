@@ -29,11 +29,16 @@ You are writing an outline. Each beat is one sentence describing what a
 paragraph will argue — an intention, not the paragraph itself. Stage 3 expands
 them. 2 to 4 beats per section.
 
-Good beat: "Concede the temperature objection is the obvious one, then dismiss
-it by pointing at gazpacho."
+The examples below are from an unrelated paper on mineral classification, so
+that lifting one into your own subject is obvious. Imitate the shape, not the
+subject.
 
-Bad beat: "The temperature objection, which holds that soup must be served
-warm, was decisively answered by the gazpacho literature." (That is prose.)
+Good beat: "Concede the vitreous-lustre objection is the obvious one, then
+dismiss it by pointing at a silicate nobody disputes."
+
+Bad beat: "The vitreous-lustre objection, which holds that a true zeolite must
+present a dull surface, was answered decisively by the feldspar literature."
+(That is prose.)
 
 # Structure
 
@@ -66,8 +71,8 @@ least one self-citation by one of your invented authors.
 
 2 or 3 invented authors at invented institutions. Names should be ordinary and
 varied. Institutions should be plausible at a glance and absurd on a second
-look ("Institute for Applied Breakfast Dynamics"). Never name a real person or
-a real university. Emails end in `.example`.
+look ("Institute for Applied Sedimentary Dynamics"). Never name a real person
+or a real university. Emails end in `.example`.
 
 # Figures
 
@@ -81,7 +86,17 @@ Discussion. You give the figure's shape; the observations are generated for you.
 - `x_min` / `x_max`: used by scatter and line; set both to 0 otherwise.
 - Every figure needs its own `label`. Two figures may not share one.
 - Captions are written in the same dry register as the body, and are often the
-  funniest line on the page. Include a negative control where one makes sense.
+  funniest line on the page.
+
+**A figure must show a difference.** Compare *items* — the thing under
+examination, one or two uncontested members of the category, and a negative
+control that scores far lower — rather than several near-identical measures of
+the same item. Three bars at 0.92, 0.95 and 0.89 with error bars of 0.04 is a
+picture of nothing, and it is rejected. The gap between the highest and lowest
+bar must be several times `spread`.
+
+The negative control is also where the joke usually is: the item that obviously
+fails, measured with the same solemnity as everything else.
 
 # Output
 

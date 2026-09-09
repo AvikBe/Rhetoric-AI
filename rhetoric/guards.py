@@ -13,26 +13,25 @@ from pathlib import Path
 PROMPTS = Path(__file__).resolve().parent / "prompts"
 
 # Few-shot examples get copied, not imitated. Given a complete worked example,
-# qwen3:8b returned a hot dog paper written by the cereal exemplar's authors, at
-# the cereal exemplar's institutions, with its sample size, effect size and
-# citation keys intact -- while the prompt was explicitly telling it not to reuse
-# any of them. Asking louder does not work; checking does.
+# qwen3:8b returned a hot dog paper written by the exemplar's authors, at its
+# institutions, with its sample size and citation keys intact -- while the prompt
+# was explicitly telling it not to. Asking louder does not work; checking does.
 #
-# Add any distinctive proper noun or number you put in a prompt or reference spec.
+# Only nouns that actually appear in rhetoric/prompts belong here, and
+# test_guards asserts exactly that. The list used to carry terms from
+# specs/cereal_soup.json as well, which the model never sees -- it is a reference
+# output, not a prompt input -- so those entries could only ever fire on a
+# coincidence. They did: three runs in a row died because the model
+# independently coined the "Journal of Culinary Ontology", which is just what a
+# paper about food taxonomy would plausibly cite. Banning an invention is worse
+# than missing a copy, because the retry loop cannot fix it.
+# Matched case-insensitively, so each noun is listed once.
 EXEMPLAR_TOKENS = (
-    # People and places from specs/cereal_soup.json. Bare surnames as well as
-    # citation keys: deepseek-v4-flash invented "Marchetti & van der Heijden
-    # (2018)", which slipped past a list that only held `marchetti2019`.
-    "Okonkwo-Reyes", "Lindqvist", "Beaumont", "Whitmore", "Breakfast Dynamics",
-    "Marchetti", "Nakamura", "Fitzgerald", "van der Meer",
-    # Citation keys and journals
-    "vandermeer", "fitzgerald2023", "marchetti2019", "nakamura2022", "okonkwo2021",
-    "Applied Gastronomy", "Culinary Ontology", "Food Physics Letters",
-    "Empirical Foodways", "Comestible Philosophy",
-    # Statistics that would otherwise be reused verbatim
-    "1247", "1.84", "89.2",
-    # Subject matter
-    "gazpacho", "Gazpacho", "bisque", "Bisque", "Chilled Suspension", "CSPI", "soup-ness",
+    # plan.system.md illustrations
+    "marchetti2019", "Sedimentary Dynamics",
+    # Register examples in both user prompts, deliberately from mineralogy so
+    # that lifting one into a paper about anything else is obvious
+    "Hoyle scale", "feldspar", "zeolite", "silicate", "vitreous-lustre",
 )
 
 # Two separate tests, because one threshold cannot serve both jobs.
@@ -51,8 +50,8 @@ SHINGLE = 12
 
 
 def find_copied(*texts: str) -> list[str]:
-    joined = " ".join(texts)
-    return sorted({token for token in EXEMPLAR_TOKENS if token in joined})
+    joined = " ".join(texts).lower()
+    return sorted({t for t in EXEMPLAR_TOKENS if t.lower() in joined})
 
 
 def _normalise(text: str) -> str:

@@ -20,7 +20,7 @@ import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from pydantic import BaseModel, ValidationError, field_validator
+from pydantic import BaseModel, ValidationError, ValidationInfo, field_validator
 
 from .compose import ABSTRACT, Prose
 from .guards import assert_no_latex, assert_original
@@ -32,9 +32,47 @@ from .plan import PROMPTS, PaperPlan, PlanSection
 MIN_PARAGRAPH_CHARS = 220
 MAX_PARAGRAPHS = 5
 
+# Real abstracts carry nought to two references; a model handed a bibliography
+# will cite most of it. Body sections are far more permissive -- citing an
+# adopted framework repeatedly is what a real paper does.
+MAX_CITES_IN_ABSTRACT = 2
+MAX_CITES_PER_PARAGRAPH = 3
+MAX_REPEATS_PER_SECTION = 3
+
 
 class SectionProse(BaseModel):
     paragraphs: list[str]
+
+    @field_validator("paragraphs")
+    @classmethod
+    def _cited_sparingly(cls, v: list[str], info: ValidationInfo) -> list[str]:
+        from collections import Counter
+
+        from .latex import cite_keys
+
+        heading = (info.context or {}).get("heading", "")
+        used = Counter(k for p in v for k in cite_keys(p))
+
+        if heading == ABSTRACT:
+            if sum(used.values()) > MAX_CITES_IN_ABSTRACT:
+                raise ValueError(
+                    f"the abstract cites {sum(used.values())} references; use at most "
+                    f"{MAX_CITES_IN_ABSTRACT}. An abstract states the finding, it does "
+                    "not review the literature."
+                )
+        else:
+            for i, p in enumerate(v, 1):
+                if len(cite_keys(p)) > MAX_CITES_PER_PARAGRAPH:
+                    raise ValueError(
+                        f"paragraph {i} cites {len(cite_keys(p))} references; use at "
+                        f"most {MAX_CITES_PER_PARAGRAPH}."
+                    )
+            if over := [k for k, n in used.items() if n > MAX_REPEATS_PER_SECTION]:
+                raise ValueError(
+                    f"{over} cited more than {MAX_REPEATS_PER_SECTION} times in one "
+                    "section. Vary the sources or drop the redundant markers."
+                )
+        return v
 
     @field_validator("paragraphs")
     @classmethod
@@ -99,7 +137,7 @@ def _generate_one(
     for attempt in range(1, attempts + 1):
         raw = complete_json(cfg, system, user, schema, name="section_prose")
         try:
-            return SectionProse.model_validate(raw).paragraphs
+            return SectionProse.model_validate(raw, context={"heading": heading}).paragraphs
         except ValidationError as exc:
             last = exc
             reasons = _reasons(exc)

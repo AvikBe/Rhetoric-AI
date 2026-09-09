@@ -43,6 +43,11 @@ Cite using double brackets around a key from the list you are given:
 `[[marchetti2019]]`. Only use keys from that list. Cite where a real paper
 would — claims about prior work, contested points — and not in every sentence.
 
+If you are writing the abstract, cite at most twice, and preferably not at all.
+An abstract states the finding; it does not review the literature. Elsewhere,
+at most three references in any one paragraph, and do not lean on the same
+source more than three times in a section.
+
 # Formatting
 
 Write plain text only. No LaTeX, no markdown, no backslashes, no asterisks, no

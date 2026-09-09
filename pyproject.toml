@@ -8,6 +8,8 @@ dependencies = [
     "pydantic>=2.6",
     "matplotlib>=3.8",
     "httpx>=0.27",
+    "fastapi>=0.110",
+    "uvicorn>=0.27",
 ]
 
 [dependency-groups]
@@ -23,6 +25,7 @@ rhetoric = "rhetoric.build:main"
 rhetoric-plan = "rhetoric.plan:main"
 rhetoric-prose = "rhetoric.prose:main"
 rhetoric-compose = "rhetoric.compose:main"
+rhetoric-serve = "rhetoric.app:main"
 
 [build-system]
 requires = ["hatchling"]
