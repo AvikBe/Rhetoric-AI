@@ -42,7 +42,7 @@ make tex
 make test
 ```
 
-141 tests, no API key or model required — `complete_json` is stubbed and the
+152 tests, no API key or model required — `complete_json` is stubbed and the
 render assertions stop at `paper.tex`. The tectonic build is covered too, and
 skipped when the binary is absent.
 
@@ -115,6 +115,7 @@ PDF without stage 3 — useful for working on the template.
 | [plan.py](rhetoric/plan.py) | Stage 2. `PaperPlan`, the repair pass, and the retry loop. |
 | [prose.py](rhetoric/prose.py) | Stage 3. One call per section, fanned out concurrently. |
 | [guards.py](rhetoric/guards.py) | Checks that make prompt instructions enforceable. |
+| [evaluate.py](rhetoric/evaluate.py) | Runs the same claims through several models and reports. |
 | [prompts/](rhetoric/prompts) | The register lives here. Iterate without touching code. |
 | [compose.py](rhetoric/compose.py) | Plan + prose → `PaperSpec`. The seam stage 3 plugs into. |
 | [synth.py](rhetoric/synth.py) | Figure shape → observations. |
@@ -327,10 +328,27 @@ Plus three things that fail closed if someone tries to check the paper:
 
 ## What to do next
 
-The thing actually worth doing next: run a few models over the same claims and
-read the Methods sections. Deadpan register is where they differ, and it is not
-predictable from size or price. `deepseek-v4-flash` is simply the first one
-that worked.
+```bash
+.venv/bin/python -m rhetoric.evaluate --models a,b,c --out evals/run1
+```
+
+Runs the matrix and writes a report. The numbers say which models work at all;
+the Methods sections it dumps say which one is funny, which is the part that
+cannot be measured. Costs one paper per cell, so start small.
+
+### Everything named in a paper must be invented
+
+Not only authors and institutions but every instrument, scale, index and
+journal. A generated paper cited the Wechsler Adult Intelligence Scale and put
+"Wechsler, D. (2008)" in a bibliography the Disclaimer declares entirely
+fabricated. Inside the fiction that is ordinary practice, which is exactly the
+problem: a real person's name attached to invented findings, making the paper
+more convincing in the way the disclosure layer exists to prevent.
+
+`REAL_ENTITIES` in [guards.py](rhetoric/guards.py) is the backstop, kept short
+and distinctive on purpose. Generic method names that belong to nobody — a
+Likert scale, Cronbach's alpha, Cohen's d — are explicitly allowed, because a
+false positive rejects an invention and the retry loop cannot fix one.
 
 Model choice: route through OpenRouter so a flash-tier open model is a config
 string, and pick on output quality rather than price — at ~20k output tokens a

@@ -12,12 +12,14 @@ import pytest
 from rhetoric.guards import (
     EXEMPLAR_TOKENS,
     PROMPTS,
+    REAL_ENTITIES,
     SHINGLE,
     _exemplars,
     assert_no_latex,
     assert_original,
     find_borrowed_phrases,
     find_copied,
+    find_real_entities,
 )
 
 
@@ -107,3 +109,49 @@ class TestAssertOriginal:
 
     def test_clean_text_passes(self) -> None:
         assert_original("A hot dog satisfies every structural criterion.")
+
+
+class TestRealEntities:
+    """A paper cited the WAIS-IV and listed "Wechsler, D. (2008)" in a
+    bibliography the Disclaimer declares entirely fabricated."""
+
+    @pytest.mark.parametrize(
+        "text",
+        [
+            "scored on the Wechsler Adult Intelligence Scale-Fourth Edition",
+            "administered the Beck Depression Inventory",
+            "compared against Raven's Progressive Matrices",
+            "as Kahneman observed",
+        ],
+    )
+    def test_real_instruments_are_rejected(self, text: str) -> None:
+        with pytest.raises(ValueError, match="real instrument or researcher"):
+            assert_original(text)
+
+    @pytest.mark.parametrize(
+        "generic",
+        [
+            "rated on a five-point Likert scale",
+            "Cronbach's alpha was 0.82",
+            "a Bonferroni correction was applied",
+            "Cohen's d = 0.62",
+            "an independent-samples t-test",
+        ],
+    )
+    def test_generic_methods_are_allowed(self, generic: str) -> None:
+        """These belong to nobody. Rejecting an invention is worse than missing
+        a copy, because the retry loop cannot fix it."""
+        assert find_real_entities(generic) == []
+        assert_original(generic)
+
+    def test_an_invented_instrument_passes(self) -> None:
+        assert_original(
+            "the Predictability Response Entropy Diagnostic for Individual "
+            "Cognitive Sequences (PREDICTS), version 2.1"
+        )
+
+    def test_the_two_lists_are_distinct(self) -> None:
+        """Different reasons, so different tests: EXEMPLAR_TOKENS must appear in
+        a prompt, REAL_ENTITIES must not be something a paper may legitimately
+        name."""
+        assert not set(EXEMPLAR_TOKENS) & set(REAL_ENTITIES)

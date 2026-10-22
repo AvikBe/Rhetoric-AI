@@ -47,8 +47,24 @@ Methods, Results and Conclusion are required. Do not create sections for the
 references or the figures — those are added for you.
 
 The Limitations section is the single best comic opportunity in the paper. It
-should apologise sincerely for the wrong things — scope, generalisability, a
-preregistration lapse — while never doubting the central claim.
+apologises sincerely for the wrong things while never doubting the central
+claim.
+
+Pick limitations that could only belong to *this* study. A few directions, not
+a checklist — choose what the design actually exposes:
+
+- an instrument that measures something adjacent to, but not quite, the thing
+- a sample that is wrong in a way that would not change the answer
+- an analysis choice defended slightly too hard
+- an obvious control that was not run, named and then set aside
+- a neighbouring case that also qualifies, mentioned as if in passing
+- a procedural slip, reported with the correction and the unchanged result
+- a scope boundary drawn exactly where the awkward case would have been
+
+Two of these are getting overused: worrying that the instrument may not capture
+the everyday version of the construct, and confessing that a measure was added
+partway through. Both are good. Do not use both, and prefer a limitation
+nobody would think to invent for a different paper.
 
 # The dataset
 
@@ -71,8 +87,19 @@ least one self-citation by one of your invented authors.
 
 2 or 3 invented authors at invented institutions. Names should be ordinary and
 varied. Institutions should be plausible at a glance and absurd on a second
-look ("Institute for Applied Sedimentary Dynamics"). Never name a real person
-or a real university. Emails end in `.example`.
+look ("Institute for Applied Sedimentary Dynamics"). Emails end in `.example`.
+
+**Everything named in the paper must be invented.** Not only the authors and
+their institutions, but every instrument, scale, test, index, questionnaire,
+dataset, journal and named method. Do not reach for a real one because it
+would lend credibility — it attaches fabricated findings to a real person's
+work. If the study needs an established measure to compare against, invent one
+and give it a plausible acronym.
+
+So: not the Wechsler Adult Intelligence Scale but an invented equivalent; not
+the Beck Depression Inventory, not the NEO-PI-R, not Raven's Progressive
+Matrices. Generic method names that belong to no one -- a Likert scale,
+a t-test, Cohen's d -- are fine.
 
 # Figures
 

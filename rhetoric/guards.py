@@ -113,12 +113,40 @@ def find_borrowed_phrases(*texts: str) -> list[str]:
     return sorted(found)
 
 
+# Real, named instruments -- and the researchers whose names they carry.
+#
+# A generated paper cited the Wechsler Adult Intelligence Scale and listed
+# "Wechsler, D. (2008)" in a bibliography the Disclaimer declares entirely
+# fabricated. Inside the fiction that is ordinary academic practice, which is
+# the problem: it is a real person's name attached to invented findings, and it
+# makes the paper more convincing in exactly the way the disclosure layer exists
+# to prevent.
+#
+# Unlike EXEMPLAR_TOKENS these are deliberately NOT in the prompts as things to
+# avoid by name -- the list is the backstop, the prompt states the rule. Kept
+# short and distinctive on purpose: a false positive rejects an invention, and
+# the retry loop cannot fix one. So no `Likert`, `Cronbach`, `Bonferroni` or
+# `Cohen` here -- those are generic method names that belong to nobody, and a
+# paper is entitled to use them.
+REAL_ENTITIES = (
+    "Wechsler", "WAIS", "WISC",
+    "Beck Depression", "NEO-PI", "Raven's Progressive", "Stanford-Binet",
+    "Minnesota Multiphasic", "MMPI", "Myers-Briggs", "Big Five Inventory",
+    "Hamilton Rating", "Kahneman", "Flynn effect",
+)
+
+
+def find_real_entities(*texts: str) -> list[str]:
+    joined = " ".join(texts).lower()
+    return sorted({e for e in REAL_ENTITIES if e.lower() in joined})
+
+
 def assert_original(*texts: str) -> None:
     """Raise if generated output reuses the few-shot example's specifics.
 
-    Two distinct failures, both seen in live runs: reusing the example's names
-    and numbers, and reproducing its sentences word-for-word. The second is the
-    subtler one -- every paper comes out carrying the same handful of lines.
+    Three distinct failures, all seen in live runs: reusing the example's names
+    and numbers, reproducing its sentences word-for-word, and reaching for a
+    real instrument instead of inventing one.
     """
     if found := find_copied(*texts):
         raise ValueError(
@@ -130,6 +158,13 @@ def assert_original(*texts: str) -> None:
             f"this reuses wording from the register examples: {borrowed[0][:110]!r}. "
             "Rewrite that clause in your own words. Imitating the shape of the "
             "examples is fine; repeating their wording is not."
+        )
+    if real := find_real_entities(*texts):
+        raise ValueError(
+            f"names a real instrument or researcher: {real}. Everything named in "
+            "the paper must be invented -- citing a real measure attaches "
+            "fabricated findings to someone's actual work. Invent an equivalent "
+            "with its own acronym."
         )
 
 
